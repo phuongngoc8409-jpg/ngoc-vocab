@@ -124,8 +124,8 @@ function fill(c,col){c.fillStyle=col;c.fillRect(0,0,W,H)}
 /* ---------- 4 khung ---------- */
 const LS=(c,n)=>c.letterSpacing=n+'px';
 const FR=[
-/* ===== 1. TỐT NGHIỆP ===== */
-{name:'Tốt nghiệp',ink:BLUE,
+/* ===== 1. KỶ NIỆM ===== */
+{name:'Kỷ niệm',ink:BLUE,
  bg(c){fill(c,'#fff8e8');c.save();c.beginPath();c.rect(0,0,W,H);c.rect(24,24,W-48,H-48);c.clip('evenodd');
    c.strokeStyle='#8fbcee';c.lineWidth=11;for(let i=-H;i<W+H;i+=30){c.beginPath();c.moveTo(i,0);c.lineTo(i+H*.35,H);c.stroke()}c.restore();
    c.strokeStyle=BLUE;c.lineWidth=2;rr(c,24,24,W-48,H-48,4);c.stroke()},
