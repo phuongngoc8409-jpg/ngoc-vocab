@@ -24,7 +24,55 @@ h2{text-align:center;font-size:18px;margin:22px 0 12px}
 .card:hover{transform:translateY(-4px)}.card.on{border-color:#ff6f9c}
 .card canvas{width:100%;height:auto;border-radius:10px;display:block;margin-bottom:6px}
 #booth{display:none;max-width:900px;margin:auto;gap:20px;justify-content:center;align-items:flex-start;flex-wrap:wrap}
-.cam{position:relative;width:min(100%,520px)}
+/* Nút điều khiển camera */
+.camera-tools{
+  position:absolute;
+  top:14px;
+  right:14px;
+  display:flex;
+  gap:7px;
+  z-index:5;
+}
+
+.camera-tool{
+  width:42px;
+  height:36px;
+  padding:0;
+  border-radius:20px;
+  background:rgba(27,42,61,.72);
+  color:white;
+  font-size:13px;
+  font-weight:700;
+  box-shadow:0 2px 8px #0003;
+  backdrop-filter:blur(5px);
+}
+
+#flashBtn{
+  font-size:19px;
+}
+
+.camera-tool.active{
+  background:#fff;
+  color:#1b2a3d;
+}/* Nút zoom 0.5x trên camera */
+.zoom-control{
+  position:absolute;
+  top:14px;
+  right:14px;
+  z-index:10;
+  padding:8px 13px;
+  border-radius:20px;
+  background:rgba(0,0,0,.55);
+  color:white;
+  font-size:13px;
+  font-weight:700;
+  border:1px solid rgba(255,255,255,.35);
+  box-shadow:none;
+  backdrop-filter:blur(8px);
+}
+.zoom-control:active{
+  background:rgba(255,255,255,.3);
+}
 video{width:100%;aspect-ratio:4/3;object-fit:cover;background:#222;border-radius:20px;border:5px solid #fff;box-shadow:0 8px 24px #6a8fd433;display:block}
 #cd{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 120px 'Playfair Display';color:#fff;text-shadow:0 4px 20px #0008;pointer-events:none}
 #flash{position:absolute;inset:0;background:#fff;opacity:0;border-radius:20px;pointer-events:none;transition:opacity .4s}
@@ -88,10 +136,21 @@ button,select{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 <h2 id="h2b" style="display:none">2. Chụp ảnh</h2>
 <div id="booth" style="display:none">
  <div>
-  <div class="cam"><video id="v" autoplay playsinline muted></video><div id="cd"></div><div id="flash"></div></div>
-  <div class="btns">
+<div class="cam">
+  <video id="v" autoplay playsinline muted></video>
+
+  <button id="zoom05" class="zoom-control" style="display:none">
+    0,5x
+  </button>
+
+  <div id="cd"></div>
+  <div id="flash"></div>
+</div>  <div class="btns">
    <select id="tm"><option value="3">Đếm 3s</option><option value="5">Đếm 5s</option></select>
-   <button class="main" id="snap">📸 Chụp</button>
+   <button class="main" id="snap">📸 Chụp</button> <button id="autoCaptureBtn" class="option-btn">
+    Tự động chụp: Tắt
+    <button id="flashBtn" class="camera-tool" title="Bật/tắt đèn flash"></button>
+</button>
    <button id="flip">🔄 Lật camera</button>
    <button id="undo">↩ Chụp lại tấm cuối</button>
    <button id="reset">Làm lại</button>
@@ -252,7 +311,81 @@ function render(f,photos,cv){
 /* ---------- giao diện ---------- */
 const grid=$('#grid'),out=$('#out');
 function init(){FR.forEach((f,i)=>{const d=document.createElement('div');d.className='card';d.innerHTML='<canvas></canvas>'+(i+1)+'. '+f.name;render(i,null,d.firstChild);d.onclick=()=>pick(i,d);grid.append(d)})}
-let facing='user',switching=false,mirror=true;
+/* ---------- FLASH CAMERA ---------- */
+let flashEnabled=false;
+
+const flashBtn=$('#flashBtn');
+
+function updateFlashButton(){
+  const track=stream?.getVideoTracks()[0];
+
+  const supported=!!(
+    track &&
+    facing==='environment' &&
+    track.getCapabilities &&
+    track.getCapabilities().torch
+  );
+
+  flashBtn.style.display=supported?'block':'none';
+
+  if(!supported){
+    flashEnabled=false;
+    flashBtn.classList.remove('active');
+  }
+}
+
+flashBtn.onclick=async()=>{
+  const track=stream?.getVideoTracks()[0];
+
+  if(!track)return;
+
+  try{
+    const supported=track.getCapabilities?.().torch;
+
+    if(!supported){
+      alert('Camera này không hỗ trợ đèn flash.');
+      return;
+    }
+
+    const nextState=!flashEnabled;
+
+    await track.applyConstraints({
+      advanced:[{torch:nextState}]
+    });
+    flashEnabled=nextState;
+    flashBtn.classList.toggle('active',flashEnabled);
+  }catch(error){
+    flashEnabled=false;
+    flashBtn.classList.remove('active');
+    alert('Không thể bật flash trên thiết bị này.');
+  }
+};// ===== CAMERA ZOOM 0.5X =====
+const zoomBtn = $('#zoom05');
+
+function updateZoomButton(){
+  zoomBtn.style.display =
+    facing === 'environment' ? 'block' : 'none';
+}
+zoomBtn.onclick = async () => {
+  if(!stream) return;
+  const track = stream.getVideoTracks()[0];
+  const capabilities = track.getCapabilities();
+
+  // Kiểm tra camera có hỗ trợ zoom 0.5x không
+  if(!capabilities.zoom ||
+     capabilities.zoom.min > 0.5 ||
+     capabilities.zoom.max < 0.5){
+    alert('Thiết bị không hỗ trợ zoom 0.5x trên camera này.');
+    return;
+  }
+  try{
+    await track.applyConstraints({
+      advanced: [{zoom: 0.5}]
+    });
+  }catch(e){
+    alert('Không thể chuyển sang 0.5x trên thiết bị này.');
+  }
+};
 const applyMirror=()=>$('#v').style.transform=(facing==='user'&&mirror)?'scaleX(-1)':'none';
 async function startCam(){
   if(switching)return;switching=true;$('#flip').disabled=true;
@@ -262,8 +395,17 @@ async function startCam(){
   for(const vid of [{...base,facingMode:{exact:facing}},{...base,facingMode:facing},true]){
     try{stream=await navigator.mediaDevices.getUserMedia({video:vid,audio:false});break}catch(e){}
   }
-  if(stream){v.srcObject=stream;applyMirror();try{await v.play()}catch(e){}status()}
-  else $('#st').textContent='⚠️ Không mở được camera. Hãy cho phép quyền camera và mở trang qua https hoặc localhost.';
+if(stream){
+  v.srcObject=stream;
+  applyMirror();
+  try{
+    await v.play();
+  }catch(e){}
+  flashEnabled=false;
+  flashBtn.classList.remove('active');
+  updateFlashButton();
+  status();
+}  else $('#st').textContent='⚠️ Không mở được camera. Hãy cho phép quyền camera và mở trang qua https hoặc localhost.';
   switching=false;$('#flip').disabled=false}
 $('#flip').onclick=()=>{if(busy||switching)return;facing=facing==='user'?'environment':'user';startCam()};
 async function pick(i,el){
@@ -275,20 +417,85 @@ function reset(){shots=[];busy=false;draw();status()}
 function draw(){render(cur,shots,out);$('#dl').disabled=shots.length<3;$('#snap').disabled=shots.length>=3||busy;$('#undo').disabled=!shots.length||busy}
 function status(){$('#st').textContent=shots.length<3?'Sẵn sàng chụp '+cap[shots.length]+' / 3':'🎉 Xong rồi! Bấm "Tải ảnh về" nhé.'}
 async function snap(){
-  const v=$('#v');if(!v.videoWidth)return;busy=true;draw();
-  for(let n=+$('#tm').value;n>0;n--){$('#cd').textContent=n;await new Promise(r=>setTimeout(r,1000))}
+  const v=$('#v');
+  if(!v.videoWidth || busy || shots.length>=3)return;
+
+  busy=true;
+  draw();
+
+  // Đếm ngược trước khi chụp
+  for(let n=+$('#tm').value;n>0;n--){
+    $('#cd').textContent=n;
+    await new Promise(r=>setTimeout(r,1000));
+  }
+
   $('#cd').textContent='';
-  const s=document.createElement('canvas');s.width=(WW+24)*K;s.height=(WH+24)*K;const c=s.getContext('2d');
-  const vw=v.videoWidth,vh=v.videoHeight,ar=s.width/s.height;let sw=vw,sh=vw/ar;if(sh>vh){sh=vh;sw=vh*ar}
-  if(facing==='user'&&mirror){c.translate(s.width,0);c.scale(-1,1)}
-  c.drawImage(v,(vw-sw)/2,(vh-sh)/2,sw,sh,0,0,s.width,s.height);
-  shots.push(s);const fl=$('#flash');fl.style.opacity=1;setTimeout(()=>fl.style.opacity=0,120);
-  busy=false;draw();status()}
+
+  // Chụp ảnh từ camera
+  const s=document.createElement('canvas');
+  s.width=(WW+24)*K;
+  s.height=(WH+24)*K;
+
+  const c=s.getContext('2d');
+  const vw=v.videoWidth,vh=v.videoHeight;
+  const ar=s.width/s.height;
+  let sw=vw,sh=vw/ar;
+
+  if(sh>vh){
+    sh=vh;
+    sw=vh*ar;
+  }
+
+  if(facing==='user'&&mirror){
+    c.translate(s.width,0);
+    c.scale(-1,1);
+  }
+
+  c.drawImage(
+    v,
+    (vw-sw)/2,(vh-sh)/2,sw,sh,
+    0,0,s.width,s.height
+  );
+
+  // Lưu ảnh
+  shots.push(s);
+
+  const fl=$('#flash');
+  fl.style.opacity=1;
+  setTimeout(()=>fl.style.opacity=0,120);
+
+  busy=false;
+  draw();
+  status();
+
+  // Tự động chụp ảnh tiếp theo
+  if(autoCapture && shots.length<3){
+    autoTimer=setTimeout(()=>{
+      autoTimer=null;
+      if(autoCapture && shots.length<3){
+        snap();
+      }
+    },1500);
+  }
+}
 $('#snap').onclick=snap;
 $('#undo').onclick=()=>{shots.pop();draw();status()};
 $('#reset').onclick=reset;
 $('#dl').onclick=()=>out.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='happy-moment-'+FR[cur].name+'.png';a.click()},'image/png');
 document.fonts.ready.then(()=>Promise.all(['900 20px "Playfair Display"','700 20px "Playfair Display"','20px "Patrick Hand"','700 14px "Be Vietnam Pro"'].map(f=>document.fonts.load(f,'Việt ÂĂỒ')))).then(init,init);
+let autoCapture = false;
+
+const autoCaptureBtn = document.getElementById("autoCaptureBtn");
+
+autoCaptureBtn.addEventListener("click", () => {
+    autoCapture = !autoCapture;
+
+    autoCaptureBtn.textContent = autoCapture
+        ? "Tự động chụp: Bật"
+        : "Tự động chụp: Tắt";
+
+    autoCaptureBtn.classList.toggle("active", autoCapture);
+});
 </script>
 </body>
 </html>
