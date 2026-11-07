@@ -1,0 +1,164 @@
+Claude
+
+
+Photobooth · HTML
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Happy Moment Photobooth</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800&family=Pacifico&family=Patrick+Hand&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:'Be Vietnam Pro',sans-serif;color:#31406b;background:linear-gradient(160deg,#dff1ff,#fff0f6 50%,#fff8d9);min-height:100vh;padding:20px 14px 50px}
+h1{font-family:'Playfair Display',serif;font-weight:900;text-align:center;margin:6px 0;font-size:clamp(26px,6vw,42px);color:#ff6f9c}
+.sub{text-align:center;margin:0 0 20px;font-weight:600}
+h2{text-align:center;font-size:18px;margin:22px 0 12px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;max-width:900px;margin:auto}
+.card{background:#fff;border-radius:18px;padding:8px;border:4px solid transparent;cursor:pointer;box-shadow:0 6px 18px #6a8fd422;transition:.2s;text-align:center;font-weight:800;font-size:13px}
+.card:hover{transform:translateY(-4px)}.card.on{border-color:#ff6f9c}
+.card canvas{width:100%;height:auto;border-radius:10px;display:block;margin-bottom:6px}
+#booth{display:none;max-width:900px;margin:auto;gap:20px;justify-content:center;align-items:flex-start;flex-wrap:wrap}
+.cam{position:relative;width:min(100%,520px)}
+video{width:100%;aspect-ratio:4/3;object-fit:cover;transform:scaleX(-1);background:#222;border-radius:20px;border:5px solid #fff;box-shadow:0 8px 24px #6a8fd433;display:block}
+#cd{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 120px 'Playfair Display';color:#fff;text-shadow:0 4px 20px #0008;pointer-events:none}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;border-radius:20px;pointer-events:none;transition:opacity .4s}
+.btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+button,select{font:700 14px 'Be Vietnam Pro';border:0;border-radius:30px;padding:11px 18px;background:#fff;color:#31406b;cursor:pointer;box-shadow:0 3px 10px #6a8fd433}
+button.main{background:#ff6f9c;color:#fff;font-size:16px}button:disabled{opacity:.4;cursor:default}
+#out{width:190px;max-width:45vw;height:auto;border-radius:8px;box-shadow:0 8px 24px #6a8fd455}
+#st{text-align:center;font-weight:700;margin-top:10px}
+</style>
+</head>
+<body>
+<h1>Happy Moment</h1>
+<p class="sub">PHOTOBOOTH · CAPTURE · PRINT · REMEMBER 🎒</p>
+<h2>1. Chọn khung ảnh</h2>
+<div class="grid" id="grid"></div>
+<h2 id="h2b" style="display:none">2. Chụp ảnh</h2>
+<div id="booth" style="display:none">
+ <div>
+  <div class="cam"><video id="v" autoplay playsinline muted></video><div id="cd"></div><div id="flash"></div></div>
+  <div class="btns">
+   <select id="tm"><option value="3">Đếm 3s</option><option value="5">Đếm 5s</option></select>
+   <button class="main" id="snap">📸 Chụp</button>
+   <button id="undo">↩ Chụp lại tấm cuối</button>
+   <button id="reset">Làm lại</button>
+  </div>
+  <div id="st"></div>
+ </div>
+ <div style="text-align:center">
+  <canvas id="out"></canvas>
+  <div class="btns"><button class="main" id="dl" disabled>⬇ Tải ảnh về</button></div>
+ </div>
+</div>
+ 
+<script>
+const $=s=>document.querySelector(s),K=2,W=600,H=1800,WX=60,WW=480,WH=380,WY=[330,740,1150];
+const BLUE='#3d62b0',cap=['Tấm 1','Tấm 2','Tấm 3'];
+let cur=0,shots=[],stream=null,busy=false;
+ 
+/* ---------- helpers ---------- */
+function T(c,t,x,y,f,col,al='center'){c.font=f;c.fillStyle=col;c.textAlign=al;c.textBaseline='middle';c.fillText(t,x,y)}
+function rr(c,x,y,w,h,r){c.beginPath();c.roundRect(x,y,w,h,r)}
+function wavy(c,x,y,w,h,a,s){
+  c.beginPath();c.moveTo(x,y);
+  const e=(x1,y1,x2,y2)=>{const L=Math.hypot(x2-x1,y2-y1),n=Math.round(L/s),dx=(x2-x1)/n,dy=(y2-y1)/n,nx=dy/Math.hypot(dx,dy)*a*2,ny=-dx/Math.hypot(dx,dy)*a*2;
+    for(let i=0;i<n;i++)c.quadraticCurveTo(x1+dx*(i+.5)+nx,y1+dy*(i+.5)+ny,x1+dx*(i+1),y1+dy*(i+1))};
+  e(x,y,x+w,y);e(x+w,y,x+w,y+h);e(x+w,y+h,x,y+h);e(x,y+h,x,y);c.closePath()}
+let sd=7;const rnd=()=>(sd=(sd*9301+49297)%233280)/233280;
+function fill(c,col){c.fillStyle=col;c.fillRect(0,0,W,H)}
+ 
+/* ---------- 4 khung ---------- */
+const LS=(c,n)=>c.letterSpacing=n+'px';
+const FR=[
+{name:'Tốt nghiệp',ink:BLUE,
+ bg(c){fill(c,'#fff8e8');c.save();c.beginPath();c.rect(0,0,W,H);c.rect(24,24,W-48,H-48);c.clip('evenodd');
+   c.strokeStyle='#8fbcee';c.lineWidth=11;for(let i=-H;i<W+H;i+=30){c.beginPath();c.moveTo(i,0);c.lineTo(i+H*.35,H);c.stroke()}c.restore();
+   c.strokeStyle=BLUE;c.lineWidth=2;rr(c,24,24,W-48,H-48,4);c.stroke()},
+ path(c,y){rr(c,WX,y,WW,WH,14)},
+ border(c,i,y){c.strokeStyle=BLUE;c.lineWidth=4;rr(c,WX,y,WW,WH,14);c.stroke();c.fillStyle='#fbe7a1';c.save();c.translate(WX+18,y+4);c.rotate(-.5);c.fillRect(-22,-8,44,16);c.restore()},
+ top(c){c.fillStyle='#fff';c.strokeStyle=BLUE;c.lineWidth=3;c.setLineDash([6,4]);rr(c,56,60,110,120,6);c.fill();c.stroke();c.setLineDash([]);
+   LS(c,4);T(c,'HAPPY MOMENT',372,75,'700 20px "Be Vietnam Pro"',BLUE);LS(c,0);
+   T(c,'GRADUATION DAY',372,128,'46px "Patrick Hand"',BLUE);T(c,'CLASS OF 2026',372,182,'700 26px "Playfair Display"','#f08fb0');
+   T(c,'🎓',111,120,'64px serif','#000');T(c,'⭐',520,40,'28px serif','#000');T(c,'✈️',520,250,'32px serif','#000');T(c,'📚',70,265,'34px serif','#000');
+   LS(c,2);T(c,'KEEP YOUR MOMENTS',330,280,'600 20px "Be Vietnam Pro"','#6f89c4');LS(c,0)},
+ bottom(c){c.fillStyle='#fffaf0';c.strokeStyle=BLUE;c.lineWidth=3;rr(c,60,1545,480,190,10);c.fill();c.stroke();
+   c.beginPath();c.moveTo(60,1550);c.lineTo(300,1655);c.lineTo(540,1550);c.stroke();
+   T(c,'💙',300,1598,'32px serif','#000');T(c,'SCHOOL MEMORIES',300,1685,'40px "Patrick Hand"',BLUE);LS(c,3);T(c,'PHOTO NO. 01',300,1718,'600 14px "Be Vietnam Pro"','#6f89c4');LS(c,0)}},
+{name:'Tờ báo',ink:'#333',
+ bg(c){fill(c,'#f8f0df');c.strokeStyle='#2b2b2b';c.lineWidth=3;rr(c,24,24,W-48,H-48,4);c.stroke()},
+ path(c,y){rr(c,WX,y,WW,WH,6)},
+ border(c,i,y){c.strokeStyle='#2b2b2b';c.lineWidth=3;rr(c,WX,y,WW,WH,6);c.stroke();c.lineWidth=1;rr(c,WX+7,y+7,WW-14,WH-14,4);c.stroke()},
+ top(c){T(c,'THE PHOTO NEWS',130,52,'700 13px "Playfair Display"','#333');T(c,'ISSUE NO. 001',470,52,'700 13px "Playfair Display"','#333');
+   T(c,'HAPPY MOMENT',300,105,'900 56px "Playfair Display"','#1d2a55');T(c,'DAILY',300,158,'900 42px "Playfair Display"','#1d2a55');
+   c.fillStyle='#1d2a55';c.fillRect(60,186,480,26);LS(c,3);T(c,'KEEP YOUR MOMENTS',300,199,'700 12px "Be Vietnam Pro"','#fff');LS(c,0);
+   c.fillStyle='#8fbcee';c.fillRect(60,228,230,44);c.fillStyle='#f8bfd2';c.fillRect(300,228,240,44);
+   T(c,'MOMENTS TODAY',175,250,'700 17px "Playfair Display"','#1d2a55');T(c,'SPECIAL EDITION',420,250,'700 17px "Playfair Display"','#7a2f4a');
+   LS(c,2);T(c,'CAPTURE · PRINT · REMEMBER',300,298,'700 12px "Be Vietnam Pro"','#444');LS(c,0)},
+ bottom(c){c.fillStyle='#1d2a55';c.fillRect(60,1550,480,56,0);T(c,'♥ HAPPY MOMENT DAILY ♥',300,1578,'italic 700 25px "Playfair Display"','#fff');
+   c.fillStyle='#fbe7a1';c.fillRect(60,1622,120,100);T(c,'PHOTO',120,1658,'800 17px "Be Vietnam Pro"','#6b4a2f');T(c,'STRIP',120,1686,'800 17px "Be Vietnam Pro"','#6b4a2f');
+   T(c,'THE PHOTO NEWS',360,1645,'700 20px "Playfair Display"','#1d2a55');
+   c.fillStyle='#222';sd=3;for(let i=0;i<46;i++)c.fillRect(200+i*6,1668,rnd()>.5?3:2,40)}},
+{name:'Sinh nhật',ink:'#8a5a2b',
+ bg(c){fill(c,'#fff3dc');sd=11;const cl=['#f8bfd2','#8fbcee','#fbe7a1','#a8e0c0'];for(let i=0;i<110;i++){c.fillStyle=cl[i%4];c.beginPath();c.arc(40+rnd()*(W-80),20+rnd()*(H-40),3+rnd()*4,0,7);c.fill()}
+   wavy(c,16,16,W-32,H-32,8,40);c.strokeStyle='#e8b36a';c.lineWidth=18;c.stroke();c.strokeStyle='#fff';c.lineWidth=3;c.setLineDash([2,10]);c.lineCap='round';c.stroke();c.setLineDash([]);c.lineCap='butt'},
+ path(c,y){wavy(c,WX,y,WW,WH,7,34)},
+ border(c,i,y){wavy(c,WX,y,WW,WH,7,34);c.strokeStyle='#e8b36a';c.lineWidth=16;c.stroke();c.strokeStyle='#fff';c.lineWidth=3;c.setLineDash([2,9]);c.lineCap='round';c.stroke();c.setLineDash([]);c.lineCap='butt';
+   T(c,['🧁','🎁','🍰'][i],i==1?WX+30:WX+WW-20,y+WH-6,'44px serif','#000')},
+ top(c){LS(c,5);T(c,'HAPPY MOMENT',270,62,'700 20px "Be Vietnam Pro"','#3d78d8');LS(c,0);
+   T(c,'BIRTHDAY SPECIAL',270,130,'54px "Patrick Hand"','#ff6f9c');T(c,'BIRTHDAY CLUB',270,185,'700 26px "Playfair Display"','#3d78d8');
+   T(c,'🧸',510,150,'80px serif','#000');T(c,'🎈',545,60,'46px serif','#000');T(c,'🎈',58,70,'40px serif','#000');
+   T(c,'PARTY TIME 🎉',300,255,'34px "Patrick Hand"','#8a5a2b')},
+ bottom(c){T(c,'🧸',110,1600,'88px serif','#000');T(c,'🎂',300,1605,'88px serif','#000');T(c,'🎁',490,1600,'76px serif','#000');
+   T(c,'MAKE A WISH',300,1688,'52px "Patrick Hand"','#3d78d8');LS(c,3);T(c,'KEEP YOUR MOMENTS',300,1725,'600 13px "Be Vietnam Pro"','#8a5a2b');LS(c,0)}},
+{name:'20/11',ink:'#5f7d57',
+ bg(c){fill(c,'#fbf8ee');c.strokeStyle='#bcd6b0';c.lineWidth=10;rr(c,20,20,W-40,H-40,24);c.stroke();c.strokeStyle='#f8bfd2';c.lineWidth=3;rr(c,34,34,W-68,H-68,16);c.stroke()},
+ path(c,y){wavy(c,WX,y,WW,WH,5,30)},
+ border(c,i,y){wavy(c,WX,y,WW,WH,5,30);c.strokeStyle='#a9d4f5';c.lineWidth=7;c.stroke();c.strokeStyle='#fff';c.lineWidth=2;c.stroke();T(c,'🎀',300,y-4,'40px serif','#000');if(i==1)T(c,'🌷',WX+WW-10,y+WH-8,'44px serif','#000');else T(c,'🌸',i?WX+20:WX+WW-20,y+WH-8,'40px serif','#000')},
+ top(c){LS(c,5);T(c,'HAPPY MOMENT',300,58,'700 16px "Be Vietnam Pro"','#5f7d57');LS(c,0);
+   T(c,'20 THÁNG 11',300,122,'900 62px "Playfair Display"','#e0708f');LS(c,1);T(c,"VIETNAMESE TEACHERS' DAY",300,183,'700 19px "Be Vietnam Pro"','#5f7d57');LS(c,0);
+   T(c,'TRI ÂN THẦY CÔ',300,238,'46px "Patrick Hand"','#3d78d8');LS(c,3);T(c,'SPECIAL THANKS',300,288,'700 14px "Be Vietnam Pro"','#e0708f');LS(c,0);
+   T(c,'📚',70,70,'42px serif','#000');T(c,'🌸',530,70,'42px serif','#000');T(c,'🍃',65,240,'32px serif','#000');T(c,'🎓',535,240,'32px serif','#000')},
+ bottom(c){T(c,'🌷',90,1590,'44px serif','#000');T(c,'📖',300,1585,'50px serif','#000');T(c,'🌸',510,1590,'44px serif','#000');
+   T(c,'KEEP YOUR MOMENTS',300,1665,'42px "Patrick Hand"','#e0708f');LS(c,3);T(c,'CAPTURE · PRINT · REMEMBER',300,1708,'600 13px "Be Vietnam Pro"','#5f7d57');LS(c,0);T(c,'20.11.2026',300,1735,'700 14px "Playfair Display"','#6b8fb8')}}
+];
+ 
+/* ---------- vẽ ---------- */
+function render(f,photos,cv){
+  cv.width=W*K;cv.height=H*K;const c=cv.getContext('2d');c.setTransform(K,0,0,K,0,0);
+  const F=FR[f];F.bg(c);
+  WY.forEach((y,i)=>{c.save();F.path(c,y);c.clip();
+    if(photos&&photos[i])c.drawImage(photos[i],WX-12,y-12,WW+24,WH+24);else{c.fillStyle='#2a2a33';c.fillRect(WX,y,WW,WH);T(c,'📷',WX+WW/2,y+WH/2,'60px serif','#000')}
+    c.restore();F.border(c,i,y)});
+  F.top(c);F.bottom(c);LS(c,2);T(c,'MADE WITH HAPPY MOMENT · NO. 001',300,1758,'600 11px "Be Vietnam Pro"',F.ink);LS(c,0)}
+ 
+/* ---------- giao diện ---------- */
+const grid=$('#grid'),out=$('#out');
+function init(){FR.forEach((f,i)=>{const d=document.createElement('div');d.className='card';d.innerHTML='<canvas></canvas>'+(i+1)+'. '+f.name;render(i,null,d.firstChild);d.onclick=()=>pick(i,d);grid.append(d)})}
+async function pick(i,el){
+  cur=i;document.querySelectorAll('.card').forEach(x=>x.classList.remove('on'));el.classList.add('on');
+  $('#booth').style.display='flex';$('#h2b').style.display='block';reset();
+  if(!stream){try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:1280,height:960},audio:false});$('#v').srcObject=stream}catch(e){$('#st').textContent='⚠️ Không mở được camera. Hãy cho phép quyền camera và mở trang qua https hoặc localhost.'}}
+  $('#booth').scrollIntoView({behavior:'smooth'})}
+function reset(){shots=[];busy=false;draw();status()}
+function draw(){render(cur,shots,out);$('#dl').disabled=shots.length<3;$('#snap').disabled=shots.length>=3||busy;$('#undo').disabled=!shots.length||busy}
+function status(){$('#st').textContent=shots.length<3?'Sẵn sàng chụp '+cap[shots.length]+' / 3':'🎉 Xong rồi! Bấm "Tải ảnh về" nhé.'}
+async function snap(){
+  const v=$('#v');if(!v.videoWidth)return;busy=true;draw();
+  for(let n=+$('#tm').value;n>0;n--){$('#cd').textContent=n;await new Promise(r=>setTimeout(r,1000))}
+  $('#cd').textContent='';
+  const s=document.createElement('canvas');s.width=(WW+24)*K;s.height=(WH+24)*K;const c=s.getContext('2d');
+  const vw=v.videoWidth,vh=v.videoHeight,ar=s.width/s.height;let sw=vw,sh=vw/ar;if(sh>vh){sh=vh;sw=vh*ar}
+  c.translate(s.width,0);c.scale(-1,1);c.drawImage(v,(vw-sw)/2,(vh-sh)/2,sw,sh,0,0,s.width,s.height);
+  shots.push(s);const fl=$('#flash');fl.style.opacity=1;setTimeout(()=>fl.style.opacity=0,120);
+  busy=false;draw();status()}
+$('#snap').onclick=snap;
+$('#undo').onclick=()=>{shots.pop();draw();status()};
+$('#reset').onclick=reset;
+$('#dl').onclick=()=>out.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='happy-moment-'+FR[cur].name+'.png';a.click()},'image/png');
+document.fonts.ready.then(()=>Promise.all(['900 20px "Playfair Display"','700 20px "Playfair Display"','20px "Patrick Hand"','700 14px "Be Vietnam Pro"'].map(f=>document.fonts.load(f,'Việt ÂĂỒ')))).then(init,init);
+</script>
+</body>
+</html
