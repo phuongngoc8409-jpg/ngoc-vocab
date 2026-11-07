@@ -17,7 +17,7 @@ h2{text-align:center;font-size:18px;margin:22px 0 12px}
 .card canvas{width:100%;height:auto;border-radius:10px;display:block;margin-bottom:6px}
 #booth{display:none;max-width:900px;margin:auto;gap:20px;justify-content:center;align-items:flex-start;flex-wrap:wrap}
 .cam{position:relative;width:min(100%,520px)}
-video{width:100%;aspect-ratio:4/3;object-fit:cover;transform:scaleX(-1);background:#222;border-radius:20px;border:5px solid #fff;box-shadow:0 8px 24px #6a8fd433;display:block}
+video{width:100%;aspect-ratio:4/3;object-fit:cover;background:#222;border-radius:20px;border:5px solid #fff;box-shadow:0 8px 24px #6a8fd433;display:block}
 #cd{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 120px 'Playfair Display';color:#fff;text-shadow:0 4px 20px #0008;pointer-events:none}
 #flash{position:absolute;inset:0;background:#fff;opacity:0;border-radius:20px;pointer-events:none;transition:opacity .4s}
 .btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
@@ -40,6 +40,7 @@ button.main{background:#ff6f9c;color:#fff;font-size:16px}button:disabled{opacity
    <select id="tm"><option value="3">Đếm 3s</option><option value="5">Đếm 5s</option></select>
    <button class="main" id="snap">📸 Chụp</button>
    <button id="flip">🔄 Lật camera</button>
+   <button id="mir">↔ Gương: Bật</button>
    <button id="undo">↩ Chụp lại tấm cuối</button>
    <button id="reset">Làm lại</button>
   </div>
@@ -77,10 +78,10 @@ const FR=[
  path(c,y){rr(c,WX,y,WW,WH,14)},
  border(c,i,y){c.strokeStyle=BLUE;c.lineWidth=4;rr(c,WX,y,WW,WH,14);c.stroke();c.fillStyle='#fbe7a1';c.save();c.translate(WX+18,y+4);c.rotate(-.5);c.fillRect(-22,-8,44,16);c.restore()},
  top(c){c.fillStyle='#fff';c.strokeStyle=BLUE;c.lineWidth=3;c.setLineDash([6,4]);rr(c,56,60,110,120,6);c.fill();c.stroke();c.setLineDash([]);
-   LS(c,4);T(c,'HAPPY MOMENT',372,75,'700 20px "Be Vietnam Pro"',BLUE);LS(c,0);
+   LS(c,4);T(c,'HAPPY MOMENT',372,75,'700 16px "Be Vietnam Pro"',BLUE);LS(c,0);
    T(c,'GRADUATION DAY',372,128,'46px "Patrick Hand"',BLUE);T(c,'CLASS OF 2026',372,182,'700 26px "Playfair Display"','#f08fb0');
    T(c,'🎓',111,120,'64px serif','#000');T(c,'⭐',520,40,'28px serif','#000');T(c,'✈️',520,250,'32px serif','#000');T(c,'📚',70,265,'34px serif','#000');
-   LS(c,2);T(c,'KEEP YOUR MOMENTS',330,280,'600 20px "Be Vietnam Pro"','#6f89c4');LS(c,0)},
+   LS(c,2);T(c,'KEEP YOUR MOMENTS',330,280,'600 13px "Be Vietnam Pro"','#6f89c4');LS(c,0)},
  bottom(c){c.fillStyle='#fffaf0';c.strokeStyle=BLUE;c.lineWidth=3;rr(c,60,1545,480,190,10);c.fill();c.stroke();
    c.beginPath();c.moveTo(60,1550);c.lineTo(300,1655);c.lineTo(540,1550);c.stroke();
    T(c,'💙',300,1598,'32px serif','#000');T(c,'SCHOOL MEMORIES',300,1685,'40px "Patrick Hand"',BLUE);LS(c,3);T(c,'PHOTO NO. 01',300,1718,'600 14px "Be Vietnam Pro"','#6f89c4');LS(c,0)}},
@@ -104,7 +105,7 @@ const FR=[
  path(c,y){wavy(c,WX,y,WW,WH,7,34)},
  border(c,i,y){wavy(c,WX,y,WW,WH,7,34);c.strokeStyle='#e8b36a';c.lineWidth=16;c.stroke();c.strokeStyle='#fff';c.lineWidth=3;c.setLineDash([2,9]);c.lineCap='round';c.stroke();c.setLineDash([]);c.lineCap='butt';
    T(c,['🧁','🎁','🍰'][i],i==1?WX+30:WX+WW-20,y+WH-6,'44px serif','#000')},
- top(c){LS(c,5);T(c,'HAPPY MOMENT',270,62,'700 20px "Be Vietnam Pro"','#3d78d8');LS(c,0);
+ top(c){LS(c,5);T(c,'HAPPY MOMENT',270,62,'700 18px "Be Vietnam Pro"','#3d78d8');LS(c,0);
    T(c,'BIRTHDAY SPECIAL',270,130,'54px "Patrick Hand"','#ff6f9c');T(c,'BIRTHDAY CLUB',270,185,'700 26px "Playfair Display"','#3d78d8');
    T(c,'🧸',510,150,'80px serif','#000');T(c,'🎈',545,60,'46px serif','#000');T(c,'🎈',58,70,'40px serif','#000');
    T(c,'PARTY TIME 🎉',300,255,'34px "Patrick Hand"','#8a5a2b')},
@@ -134,34 +135,26 @@ function render(f,photos,cv){
 /* ---------- giao diện ---------- */
 const grid=$('#grid'),out=$('#out');
 function init(){FR.forEach((f,i)=>{const d=document.createElement('div');d.className='card';d.innerHTML='<canvas></canvas>'+(i+1)+'. '+f.name;render(i,null,d.firstChild);d.onclick=()=>pick(i,d);grid.append(d)})}
-let facing='user';
+let facing='user',switching=false,mirror=true;
+const applyMirror=()=>$('#v').style.transform=(facing==='user'&&mirror)?'scaleX(-1)':'none';
 async function startCam(){
-  if(stream)stream.getTracks().forEach(t=>t.stop());
-  const base={width:1280,height:960};
-  try{
-    stream=await navigator.mediaDevices.getUserMedia({video:{...base,facingMode:{exact:facing}},audio:false});
-  }catch(e){
-    try{
-      stream=await navigator.mediaDevices.getUserMedia({video:{...base,facingMode:facing},audio:false});
-    }catch(e2){
-      $('#st').textContent='⚠️ Không mở được camera. Hãy cho phép quyền camera và mở trang qua https hoặc localhost.';
-      return;
-    }
+  if(switching)return;switching=true;$('#flip').disabled=true;
+  const v=$('#v');
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;v.srcObject=null}
+  const base={width:{ideal:1280},height:{ideal:960}};
+  for(const vid of [{...base,facingMode:{exact:facing}},{...base,facingMode:facing},true]){
+    try{stream=await navigator.mediaDevices.getUserMedia({video:vid,audio:false});break}catch(e){}
   }
-  $('#v').srcObject=stream;
-  $('#v').style.transform=facing==='user'?'scaleX(-1)':'none';
-}  if(stream)stream.getTracks().forEach(t=>t.stop());
-  try{
-    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:facing},width:1280,height:960},audio:false});
-    $('#v').srcObject=stream;
-    $('#v').style.transform=facing==='user'?'scaleX(-1)':'none';
-  }catch(e){$('#st').textContent='⚠️ Không mở được camera. Hãy cho phép quyền camera và mở trang qua https hoặc localhost.'}
-}
-$('#flip').onclick=()=>{facing=facing==='user'?'environment':'user';startCam()};
+  if(stream){v.srcObject=stream;applyMirror();try{await v.play()}catch(e){}status()}
+  else $('#st').textContent='⚠️ Không mở được camera. Hãy cho phép quyền camera và mở trang qua https hoặc localhost.';
+  switching=false;$('#flip').disabled=false}
+$('#mir').onclick=()=>{mirror=!mirror;$('#mir').textContent='↔ Gương: '+(mirror?'Bật':'Tắt');applyMirror()};
+$('#flip').onclick=()=>{if(busy||switching)return;facing=facing==='user'?'environment':'user';startCam()};
 async function pick(i,el){
   cur=i;document.querySelectorAll('.card').forEach(x=>x.classList.remove('on'));el.classList.add('on');
   $('#booth').style.display='flex';$('#h2b').style.display='block';reset();
-  if(!stream)await startCam();  $('#booth').scrollIntoView({behavior:'smooth'})}
+  if(!stream)await startCam();
+  $('#booth').scrollIntoView({behavior:'smooth'})}
 function reset(){shots=[];busy=false;draw();status()}
 function draw(){render(cur,shots,out);$('#dl').disabled=shots.length<3;$('#snap').disabled=shots.length>=3||busy;$('#undo').disabled=!shots.length||busy}
 function status(){$('#st').textContent=shots.length<3?'Sẵn sàng chụp '+cap[shots.length]+' / 3':'🎉 Xong rồi! Bấm "Tải ảnh về" nhé.'}
@@ -171,8 +164,9 @@ async function snap(){
   $('#cd').textContent='';
   const s=document.createElement('canvas');s.width=(WW+24)*K;s.height=(WH+24)*K;const c=s.getContext('2d');
   const vw=v.videoWidth,vh=v.videoHeight,ar=s.width/s.height;let sw=vw,sh=vw/ar;if(sh>vh){sh=vh;sw=vh*ar}
-  if(facing==='user'){c.translate(s.width,0);c.scale(-1,1)}
-  c.drawImage(v,(vw-sw)/2,(vh-sh)/2,sw,sh,0,0,s.width,s.height);  shots.push(s);const fl=$('#flash');fl.style.opacity=1;setTimeout(()=>fl.style.opacity=0,120);
+  if(facing==='user'&&mirror){c.translate(s.width,0);c.scale(-1,1)}
+  c.drawImage(v,(vw-sw)/2,(vh-sh)/2,sw,sh,0,0,s.width,s.height);
+  shots.push(s);const fl=$('#flash');fl.style.opacity=1;setTimeout(()=>fl.style.opacity=0,120);
   busy=false;draw();status()}
 $('#snap').onclick=snap;
 $('#undo').onclick=()=>{shots.pop();draw();status()};
@@ -181,4 +175,5 @@ $('#dl').onclick=()=>out.toBlob(b=>{const a=document.createElement('a');a.href=U
 document.fonts.ready.then(()=>Promise.all(['900 20px "Playfair Display"','700 20px "Playfair Display"','20px "Patrick Hand"','700 14px "Be Vietnam Pro"'].map(f=>document.fonts.load(f,'Việt ÂĂỒ')))).then(init,init);
 </script>
 </body>
-</html
+</html>
+ 
