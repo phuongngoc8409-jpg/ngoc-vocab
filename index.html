@@ -311,63 +311,18 @@ function render(f,photos,cv){
 /* ---------- giao diện ---------- */
 const grid=$('#grid'),out=$('#out');
 function init(){FR.forEach((f,i)=>{const d=document.createElement('div');d.className='card';d.innerHTML='<canvas></canvas>'+(i+1)+'. '+f.name;render(i,null,d.firstChild);d.onclick=()=>pick(i,d);grid.append(d)})}
-/* ---------- FLASH CAMERA ---------- */
-let flashEnabled=false;
-
-const flashBtn=$('#flashBtn');
-
-function updateFlashButton(){
-  const track=stream?.getVideoTracks()[0];
-
-  const supported=!!(
-    track &&
-    facing==='environment' &&
-    track.getCapabilities &&
-    track.getCapabilities().torch
-  );
-
-  flashBtn.style.display=supported?'block':'none';
-
-  if(!supported){
-    flashEnabled=false;
-    flashBtn.classList.remove('active');
-  }
-}
-
-flashBtn.onclick=async()=>{
-  const track=stream?.getVideoTracks()[0];
-
-  if(!track)return;
-
-  try{
-    const supported=track.getCapabilities?.().torch;
-
-    if(!supported){
-      alert('Camera này không hỗ trợ đèn flash.');
-      return;
-    }
-
-    const nextState=!flashEnabled;
-
-    await track.applyConstraints({
-      advanced:[{torch:nextState}]
-    });
-    flashEnabled=nextState;
-    flashBtn.classList.toggle('active',flashEnabled);
-  }catch(error){
-    flashEnabled=false;
-    flashBtn.classList.remove('active');
-    alert('Không thể bật flash trên thiết bị này.');
-  }
-};// ===== CAMERA ZOOM 0.5X =====
+let facing='user',switching=false,mirror=true;
+// ===== CAMERA ZOOM 0.5X =====
 const zoomBtn = $('#zoom05');
 
 function updateZoomButton(){
   zoomBtn.style.display =
     facing === 'environment' ? 'block' : 'none';
 }
+
 zoomBtn.onclick = async () => {
   if(!stream) return;
+
   const track = stream.getVideoTracks()[0];
   const capabilities = track.getCapabilities();
 
@@ -378,6 +333,7 @@ zoomBtn.onclick = async () => {
     alert('Thiết bị không hỗ trợ zoom 0.5x trên camera này.');
     return;
   }
+
   try{
     await track.applyConstraints({
       advanced: [{zoom: 0.5}]
@@ -398,12 +354,9 @@ async function startCam(){
 if(stream){
   v.srcObject=stream;
   applyMirror();
-  try{
-    await v.play();
-  }catch(e){}
-  flashEnabled=false;
-  flashBtn.classList.remove('active');
-  updateFlashButton();
+  updateZoomButton();
+
+  try{await v.play()}catch(e){}
   status();
 }  else $('#st').textContent='⚠️ Không mở được camera. Hãy cho phép quyền camera và mở trang qua https hoặc localhost.';
   switching=false;$('#flip').disabled=false}
