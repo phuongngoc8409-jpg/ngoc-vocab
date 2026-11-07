@@ -137,6 +137,20 @@ function init(){FR.forEach((f,i)=>{const d=document.createElement('div');d.class
 let facing='user';
 async function startCam(){
   if(stream)stream.getTracks().forEach(t=>t.stop());
+  const base={width:1280,height:960};
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{...base,facingMode:{exact:facing}},audio:false});
+  }catch(e){
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({video:{...base,facingMode:facing},audio:false});
+    }catch(e2){
+      $('#st').textContent='⚠️ Không mở được camera. Hãy cho phép quyền camera và mở trang qua https hoặc localhost.';
+      return;
+    }
+  }
+  $('#v').srcObject=stream;
+  $('#v').style.transform=facing==='user'?'scaleX(-1)':'none';
+}  if(stream)stream.getTracks().forEach(t=>t.stop());
   try{
     stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:facing},width:1280,height:960},audio:false});
     $('#v').srcObject=stream;
