@@ -25,6 +25,49 @@ button,select{font:700 14px 'Be Vietnam Pro';border:0;border-radius:30px;padding
 button.main{background:#ff6f9c;color:#fff;font-size:16px}button:disabled{opacity:.4;cursor:default}
 #out{width:190px;max-width:45vw;height:auto;border-radius:8px;box-shadow:0 8px 24px #6a8fd455}
 #st{text-align:center;font-weight:700;margin-top:10px}
+/* ===== Giao diện điện thoại ===== */
+html{-webkit-text-size-adjust:100%}
+button,select{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+
+@media (max-width:700px){
+  body{padding:14px 10px calc(30px + env(safe-area-inset-bottom))}
+  h2{font-size:16px;margin:16px 0 10px}
+  .sub{font-size:12px;letter-spacing:1px;margin-bottom:12px}
+
+  /* chọn khung: 2 cột */
+  .grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .card{border-radius:14px;padding:6px;font-size:12px}
+
+  /* khu vực chụp: xếp dọc, camera to full màn hình */
+  #booth{flex-direction:column;align-items:center;gap:16px}
+  .cam{width:100%}
+  video{border-width:3px;border-radius:16px}
+  #cd{font-size:90px}
+  #flash{border-radius:16px}
+
+  /* nút bấm to, dễ chạm */
+  .btns{gap:8px}
+  .btns button,.btns select{padding:12px 14px;font-size:14px;min-height:44px}
+  .btns button.main{flex:1 1 100%;font-size:17px;padding:14px}
+
+  /* ảnh xem trước + nút tải */
+  #out{width:62vw;max-width:260px}
+  #st{font-size:14px;padding:0 6px}
+}
+
+/* màn hình rất nhỏ */
+@media (max-width:360px){
+  .btns button,.btns select{flex:1 1 45%;padding:11px 8px;font-size:13px}
+  #cd{font-size:72px}
+}
+
+/* điện thoại nằm ngang */
+@media (max-height:480px) and (orientation:landscape){
+  #booth{flex-direction:row;align-items:flex-start}
+  .cam{width:55%}
+  #out{width:120px}
+  #cd{font-size:64px}
+}
 </style>
 </head>
 <body>
