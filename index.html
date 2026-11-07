@@ -124,8 +124,8 @@ function fill(c,col){c.fillStyle=col;c.fillRect(0,0,W,H)}
 /* ---------- 4 khung ---------- */
 const LS=(c,n)=>c.letterSpacing=n+'px';
 const FR=[
-/* ===== 1. KỶ NIỆM ===== */
-{name:'Kỷ niệm',ink:BLUE,
+/* ===== 1. TỐT NGHIỆP ===== */
+{name:'Tốt nghiệp',ink:BLUE,
  bg(c){fill(c,'#fff8e8');c.save();c.beginPath();c.rect(0,0,W,H);c.rect(24,24,W-48,H-48);c.clip('evenodd');
    c.strokeStyle='#8fbcee';c.lineWidth=11;for(let i=-H;i<W+H;i+=30){c.beginPath();c.moveTo(i,0);c.lineTo(i+H*.35,H);c.stroke()}c.restore();
    c.strokeStyle=BLUE;c.lineWidth=2;rr(c,24,24,W-48,H-48,4);c.stroke()},
@@ -135,10 +135,10 @@ const FR=[
    c.fillStyle='#fff';c.strokeStyle=BLUE;c.lineWidth=3;c.setLineDash([6,4]);rr(c,52,58,120,130,6);c.fill();c.stroke();c.setLineDash([]);
    T(c,'🎓',112,123,'70px serif','#000');
    LS(c,4);T(c,'HAPPY MOMENT',372,78,'700 20px "Be Vietnam Pro"',BLUE);LS(c,0);
-   T(c,'OUR LITTLE DAYS',372,135,'52px "Patrick Hand"',BLUE);
-   T(c,'A LITTLE PIECE OF OUR YOUTH',372,190,'700 25px "Playfair Display"','#f08fb0');
+   T(c,'OUR LITTLE DAYS',372,135,'55px "Patrick Hand"',BLUE);
+   T(c,'A LITTLE PIECE OF OUR YOUTH',372,200,'700 25px "Playfair Display"','#f08fb0');
    T(c,'✈️',70,285,'34px serif','#000');T(c,'📚',530,285,'34px serif','#000');
-   LS(c,3);T(c,'✉·SPECIAL POSTCARD·2026',300,280,'600 23px "Be Vietnam Pro"','#6f89c4');LS(c,0)},
+   LS(c,3);T(c,'✉·SPECIAL POSTCARD·2026',300,285,'600 23px "Be Vietnam Pro"','#6f89c4');LS(c,0)},
  bottom(c){
    c.fillStyle='#fffaf0';c.strokeStyle=BLUE;c.lineWidth=3;rr(c,60,1548,480,190,10);c.fill();c.stroke();
    c.beginPath();c.moveTo(60,1553);c.lineTo(300,1660);c.lineTo(540,1553);c.stroke();
@@ -166,8 +166,8 @@ const FR=[
    T(c,'SPECIAL EDITION',62,50,'700 14px "Be Vietnam Pro"','#8a302d','left');
    T(c,'SCHOOL YEARBOOK 2026',538,50,'700 14px "Be Vietnam Pro"','#8a302d','right');
    c.strokeStyle='#30291f';c.lineWidth=1;c.beginPath();c.moveTo(60,66);c.lineTo(540,66);c.stroke();
-   T(c,'THE',300,95,'italic 700 24px "Playfair Display"','#8a302d');
-   T(c,'PHOTO DAILY',300,145,'900 58px "Playfair Display"','#202b43');
+   T(c,'THE',300,95,'italic 700 26px "Playfair Display"','#8a302d');
+   T(c,'PHOTO DAILY',300,142,'900 58px "Playfair Display"','#202b43');
    T(c,'A LITTLE PAPER FULL OF BIG MEMORIES',300,190,'italic 16px "Playfair Display"','#514638');
    c.strokeStyle='#30291f';c.lineWidth=2;c.beginPath();c.moveTo(60,208);c.lineTo(540,208);c.stroke();
    c.fillStyle='#202b43';c.fillRect(60,218,480,32);T(c,'THE BEST DAYS OF OUR LIVES',300,234,'700 17px "Playfair Display"','#fff');
@@ -179,7 +179,7 @@ const FR=[
  },
  bottom(c){
    c.strokeStyle='#30291f';c.lineWidth=2;c.beginPath();c.moveTo(60,1542);c.lineTo(540,1542);c.stroke();
-   c.fillStyle='#202b43';c.fillRect(60,1554,480,50);T(c,'♡  THE PHOTO DAILY  ♡',300,1580,'italic 700 25px "Playfair Display"','#e5d8bd');
+   c.fillStyle='#202b43';c.fillRect(60,1554,480,50);T(c,'♥  THE PHOTO DAILY  ♥',300,1580,'italic 700 25px "Playfair Display"','#e5d8bd');
    c.fillStyle='#e5d8bd';c.fillRect(60,1616,125,114);
    T(c,'VOL.',122,1638,'700 14px "Be Vietnam Pro"','#8a302d');T(c,'001',122,1670,'900 36px "Playfair Display"','#202b43');T(c,'2026',122,1704,'700 16px "Be Vietnam Pro"','#514638');
    T(c,'OUR STORY,',362,1640,'italic 700 24px "Playfair Display"','#202b43');
@@ -215,7 +215,7 @@ const FR=[
  top(c){
    LS(c,5);T(c,'HAPPY MOMENT',300,62,'700 20px "Be Vietnam Pro"','#5f7d57');LS(c,0);
    T(c,'20 THÁNG 11',300,128,'900 64px "Playfair Display"','#e0708f');
-   LS(c,1);T(c,"VIETNAMESE TEACHERS' DAY",300,192,'700 22px "Be Vietnam Pro"','#5f7d57');LS(c,0);
+   LS(c,1);T(c,"NHÀ GIÁO VIỆT NAM",300,185,'700 24px "Be Vietnam Pro"','#5f7d57');LS(c,0);
    T(c,'TRI ÂN THẦY CÔ',300,244,'52px "Patrick Hand"','#3d78d8');
    LS(c,4);T(c,'SPECIAL THANKS',300,292,'700 18px "Be Vietnam Pro"','#e0708f');LS(c,0);
    T(c,'📚',70,70,'44px serif','#000');T(c,'🌸',530,70,'44px serif','#000');T(c,'🍃',70,235,'36px serif','#000');T(c,'🎓',530,235,'36px serif','#000')},
