@@ -55,24 +55,22 @@ h2{text-align:center;font-size:18px;margin:22px 0 12px}
   background:#fff;
   color:#1b2a3d;
 }.zoom-control{
-  position:absolute;
-  top:18px;
-  right:18px;
-  z-index:10;
+  position:static;
   width:42px;
-  height:32px;
+  height:36px;
   padding:0;
   border-radius:20px;
-  background:rgba(27,42,61,.75);
+  background:rgba(27,42,61,.72);
   color:white;
   font-size:12px;
   font-weight:700;
-  border:1px solid rgba(255,255,255,.4);
-  box-shadow:0 2px 8px #0003;
+  border:1px solid rgba(255,255,255,.35);
+  box-shadow:none;
   backdrop-filter:blur(6px);
 }
+
 .zoom-control:active{
-  background:rgba(255,255,255,.35);
+  background:rgba(255,255,255,.3);
 }
 .cam{
   position:relative;
@@ -146,9 +144,15 @@ button,select{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 <div class="cam">
   <video id="v" autoplay playsinline muted></video>
 
+  <div class="camera-tools">
   <button id="zoom05" class="zoom-control" style="display:none">
     0,5x
   </button>
+
+  <button id="flashBtn" class="camera-tool" title="Bật đèn flash">
+    ⚡
+  </button>
+</div>
 
   <div id="cd"></div>
   <div id="flash"></div>
@@ -156,7 +160,6 @@ button,select{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
    <select id="tm"><option value="3">Đếm 3s</option><option value="5">Đếm 5s</option></select>
    <button class="main" id="snap">📸 Chụp</button> <button id="autoCaptureBtn" class="option-btn">
     Tự động chụp: Tắt
-    <button id="flashBtn" class="camera-tool" title="Bật/tắt đèn flash"></button>
 </button>
    <button id="flip">🔄 Lật camera</button>
    <button id="undo">↩ Chụp lại tấm cuối</button>
@@ -320,33 +323,71 @@ const grid=$('#grid'),out=$('#out');
 function init(){FR.forEach((f,i)=>{const d=document.createElement('div');d.className='card';d.innerHTML='<canvas></canvas>'+(i+1)+'. '+f.name;render(i,null,d.firstChild);d.onclick=()=>pick(i,d);grid.append(d)})}
 let facing='user',switching=false,mirror=true;
 // ===== CAMERA ZOOM 0.5X =====
+// ===== CHUYỂN ĐỔI ZOOM 0.5X / 1X =====
 const zoomBtn = $('#zoom05');
+// ===== CAMERA FLASH =====
+const flashBtn = $('#flashBtn');
+let torchOn = false;
 
-function updateZoomButton(){
-  zoomBtn.style.display =
-    facing === 'environment' ? 'block' : 'none';
-}
-
-zoomBtn.onclick = async () => {
+flashBtn.onclick = async () => {
   if(!stream) return;
 
   const track = stream.getVideoTracks()[0];
   const capabilities = track.getCapabilities();
 
-  // Kiểm tra camera có hỗ trợ zoom 0.5x không
+  if(!capabilities.torch){
+    alert('Camera trên thiết bị không hỗ trợ đèn flash.');
+    return;
+  }
+
+  try{
+    const newState = !torchOn;
+
+    await track.applyConstraints({
+      advanced: [{torch: newState}]
+    });
+
+    torchOn = newState;
+    flashBtn.classList.toggle('active', torchOn);
+    flashBtn.title = torchOn ? 'Tắt đèn flash' : 'Bật đèn flash';
+
+  }catch(e){
+    alert('Không thể bật đèn flash trên thiết bị này.');
+  }
+};
+let currentZoom = 1;
+
+function updateZoomButton(){
+  zoomBtn.style.display =
+    facing === 'environment' ? 'block' : 'none';
+
+  zoomBtn.textContent = currentZoom === 0.5 ? '0,5x' : '1x';
+}
+flashBtn.style.display =
+  facing === 'environment' ? 'block' : 'none';
+zoomBtn.onclick = async () => {
+  if(!stream) return;
+
+  const track = stream.getVideoTracks()[0];
+  const capabilities = track.getCapabilities();
+  const newZoom = currentZoom === 1 ? 0.5 : 1;
+
   if(!capabilities.zoom ||
-     capabilities.zoom.min > 0.5 ||
-     capabilities.zoom.max < 0.5){
-    alert('Thiết bị không hỗ trợ zoom 0.5x trên camera này.');
+     newZoom < capabilities.zoom.min ||
+     newZoom > capabilities.zoom.max){
+    alert('Camera trên thiết bị không hỗ trợ mức zoom này.');
     return;
   }
 
   try{
     await track.applyConstraints({
-      advanced: [{zoom: 0.5}]
+      advanced: [{zoom: newZoom}]
     });
+
+    currentZoom = newZoom;
+    updateZoomButton();
   }catch(e){
-    alert('Không thể chuyển sang 0.5x trên thiết bị này.');
+    alert('Không thể chuyển đổi góc camera trên thiết bị này.');
   }
 };
 const applyMirror=()=>$('#v').style.transform=(facing==='user'&&mirror)?'scaleX(-1)':'none';
