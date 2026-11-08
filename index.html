@@ -54,21 +54,30 @@ h2{text-align:center;font-size:18px;margin:22px 0 12px}
 .camera-tool.active{
   background:#fff;
   color:#1b2a3d;
-}/* Nút zoom 0.5x trên camera */
+}/* Nút zoom 0.5x */
+.cam{
+  position:relative;
+}
+
 .zoom-control{
   position:absolute;
-  top:14px;
-  right:14px;
+  top:12px;
+  right:12px;
   z-index:10;
-  padding:8px 13px;
-  border-radius:20px;
-  background:rgba(0,0,0,.55);
+  width:42px;
+  height:32px;
+  padding:0;
+  border-radius:18px;
+  background:rgba(27,42,61,.72);
   color:white;
-  font-size:13px;
-  font-weight:700;
-  border:1px solid rgba(255,255,255,.35);
-  box-shadow:none;
-  backdrop-filter:blur(8px);
+  font-size:12px;
+  font-weight:800;
+  border:1px solid rgba(255,255,255,.4);
+  backdrop-filter:blur(6px);
+  box-shadow:0 2px 8px #0003;
+}
+.zoom-control:active{
+  background:rgba(255,255,255,.35);
 }
 .zoom-control:active{
   background:rgba(255,255,255,.3);
