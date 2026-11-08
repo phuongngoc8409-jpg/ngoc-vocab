@@ -358,13 +358,13 @@ flashBtn.onclick = async () => {
 let currentZoom = 1;
 
 function updateZoomButton(){
-  zoomBtn.style.display =
-    facing === 'environment' ? 'block' : 'none';
+  const isRearCamera = facing === 'environment';
+
+  zoomBtn.style.display = isRearCamera ? 'block' : 'none';
+  flashBtn.style.display = isRearCamera ? 'block' : 'none';
 
   zoomBtn.textContent = currentZoom === 0.5 ? '0,5x' : '1x';
 }
-flashBtn.style.display =
-  facing === 'environment' ? 'block' : 'none';
 zoomBtn.onclick = async () => {
   if(!stream) return;
 
